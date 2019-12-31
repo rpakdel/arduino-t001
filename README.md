@@ -7,8 +7,8 @@
 * 5V Arduino clone with NRF24L01 wireless module
 * Joystick data is sent from another Arduino with NRF24L01 module
 
-!(T001_1.jpg)
-!(T001_2.jpg)
+![view1](T001_1.jpg)
+![view2](T001_2.jpg)
 
 
 
