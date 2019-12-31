@@ -12,67 +12,58 @@
 #include <SPI.h>
 #include <SoftwareSerial.h>
 #include "RF24.h"
+#include "joydata.h"
+
+#define XAXIS_ANALOG_PIN A1
+#define YAXIS_ANALOG_PIN A0
+#define SW_ANALOG_PIN A2
+
+int16_t XAXIS_RANGE[3] = { 23, 519, 1011 }; // min, mid, max
+int16_t YAXIS_RANGE[3] = { 22, 522, 1011 }; // min, mid, max
 
 RF24 radio(9, 10);
 byte addresses[][6] = { "1Node", "2Node" };
 
+void setupRadio()
+{
+	radio.begin();
+	radio.setRetries(0, 15);
+	radio.setPALevel(RF24_PA_HIGH);
+
+	radio.openWritingPipe(addresses[1]);
+	radio.stopListening();
+}
+
 void setup() 
 {
     Serial.begin(115200);
-    Serial.println(F("SENDER"));
+	setupRadio();
 
-    radio.begin();
-    radio.setRetries(0, 15);
-    radio.setPALevel(RF24_PA_HIGH);
-
-    radio.openWritingPipe(addresses[1]);
-    radio.stopListening();
+    Serial.println(F("SENDER"));    
 }
-
-
-void displayBufferOnLcd(char* buffer, int maxLex)
-{
-    Serial.print(F("Buffer: "));
-    Serial.println(buffer);
-}
-
-char buffer[128];
 
 void loop()
 {
-  int forwardBack = (510 - analogRead(0)) / 2;
-  
-  if (forwardBack < -255)
-  {
-    forwardBack = -255;
-  }
-  if (forwardBack > 255)
-  {
-    forwardBack = 255;
-  }
-  
+    JoyData joyData;
+	// this configuration is for the joystick attached to the breadboard
+    joyData.X = - analogRead(XAXIS_ANALOG_PIN) + XAXIS_RANGE[1];
+    joyData.Y = - analogRead(YAXIS_ANALOG_PIN) + YAXIS_RANGE[1];
+    joyData.Button = 0;
+    joyData.Id = 0;
 
-  int leftRight = (506 - analogRead(1)) / 2;
+	clampJoyDataXY(joyData, -512, 512);
+	zeroDeadZoneJoyData(joyData, 10, 1);
 
-  if (leftRight < -255)
-  {
-    leftRight = -255;
-  }
-  if (leftRight > 255)
-  {
-    leftRight = 255;
-  }
-    
-    sprintf(buffer, "%d,%d", forwardBack, leftRight);
-    Serial.print(F("Now sending "));
-    Serial.print(buffer);
+
+    printJoyData(joyData, Serial);
     Serial.print(F("..."));
-    if (!radio.write(buffer, strlen(buffer)))
+
+    if (!radio.write(&joyData, sizeof(joyData)))
     {
-        Serial.println(F("failed"));
+        Serial.println(F("NOK"));
     }
     else
     {
-        Serial.println(F("ok"));
+        Serial.println(F("OK"));
     }
 }

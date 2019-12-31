@@ -84,6 +84,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\joy_receiver;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\Wire\src;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src;$(ProjectDir)..\..\Arduino\libraries\RF24;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\Wire\src\utility;$(ProjectDir)..\..\Arduino\libraries\RF24\utility;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\tools\avr\avr\include;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\tools\avr\avr\include\avr;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.8.1\include;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.9.2\include;$(ProjectDir)..\..\..\..\..\..\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.9.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.joy_receiver.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PreprocessorDefinitions>__AVR_atmega328p__;__AVR_ATmega328P__;__AVR_ATmega328p__;F_CPU=16000000L;ARDUINO=10809;ARDUINO_AVR_PRO;ARDUINO_ARCH_AVR;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -116,7 +119,13 @@
     <None Include="joy_receiver.ino" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="joydata.h" />
+    <ClInclude Include="motor.h" />
+    <ClInclude Include="MotorPins.h" />
     <ClInclude Include="__vm\.joy_receiver.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="motor.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

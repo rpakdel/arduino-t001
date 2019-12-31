@@ -6,134 +6,102 @@
 
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
 #include <RF24_config.h>
 #include <printf.h>
 #include <nRF24L01.h>
 
 #include "RF24.h"
 
+#include "joydata.h"
+#include "motor.h"
+#include "motorpins.h"
+
 RF24 radio(9, 10);
 byte addresses[][6] = { "1Node", "2Node" };
 
-char buffer[33];
+// Motor A is left when facing the front of the robot
+MotorPins motorA = { 7, 8, 6 };
+// Motor B is right when facing the front of the robot
+MotorPins motorB = { 3, 4, 5 };
 
-// Motor 1
-int dir1PinA = 3;
-int dir2PinA = 4;
-int speedPinA = 5; // Needs to be a PWM pin to be able to control motor speed
+Motor motor(motorA, motorB);
 
-				   // Motor 2
-int dir1PinB = 7;
-int dir2PinB = 8;
-int speedPinB = 6; // Needs to be a PWM pin to be able to control motor speed
-
+void setupRadio()
+{
+	radio.begin();
+	radio.setPALevel(RF24_PA_HIGH);
+	radio.setAutoAck(1);
+	radio.setRetries(0, 15);
+	radio.openReadingPipe(0, addresses[1]);
+	radio.startListening();
+}
 
 void setup()
 {
-	pinMode(dir1PinA, OUTPUT);
-	pinMode(dir2PinA, OUTPUT);
-	pinMode(speedPinA, OUTPUT);
-	pinMode(dir1PinB, OUTPUT);
-	pinMode(dir2PinB, OUTPUT);
-	pinMode(speedPinB, OUTPUT);
-
-    buffer[0] = '\0';
+	motor.setup();
+	setupRadio();
     Serial.begin(115200);
-    Serial.println(F("Receiver"));
-    
-    radio.begin();
-    radio.setRetries(0, 15);
-    radio.setPALevel(RF24_PA_HIGH);
-    radio.openReadingPipe(0, addresses[1]);
-    radio.startListening();
+    Serial.println(F("T001"));
 }
 
-void motorMove(int mindex, int mspeed)
+void handleJoyData(JoyData& joyData)
 {
-	int speedPin = speedPinA;
-	int dir1pin = dir1PinA;
-	int dir2pin = dir2PinA;
+	int16_t motorBSpeed = 0;
+	int16_t motorASpeed = 0;
 
-	if (mindex == 1)
-	{
-		speedPin = speedPinB;
-		dir1pin = dir1PinB;
-		dir2pin = dir2PinB;
-	}
-
-	if (mspeed >= 0)
+	if (joyData.Y > 0)
 	{
 		// forward
-		digitalWrite(dir1pin, LOW);
-		digitalWrite(dir2pin, HIGH);
-
-		analogWrite(speedPin, mspeed);
-	}
-	else
-	{
-		digitalWrite(dir1pin, HIGH);
-		digitalWrite(dir2pin, LOW);
-
-		analogWrite(speedPin, -mspeed);
-	}	
-}
-
-void goForward(int value, int leftRight)
-{
-	int motorBSpeed = 0;
-	int motorASpeed = 0;
-
-	if (value > 0)
-	{
-		// motor B forward
-		motorBSpeed = value;
-		// motor A forward
-		motorASpeed = value;
-
-		if (leftRight < 0)
+		motorBSpeed = joyData.Y;
+		motorASpeed = joyData.Y;
+		
+		if (joyData.X < 0)
 		{
-			motorBSpeed = value + leftRight;
+			// forward right
+			motorBSpeed = joyData.Y + joyData.X;
 		}
-		else if (leftRight > 0)
+		else if (joyData.X > 0)
 		{
-			motorASpeed = value - leftRight;
+			// forward left
+			motorASpeed = joyData.Y - joyData.X;
 		}
 	}
-	else if (value < 0)
+	else if (joyData.Y < 0)
 	{
-		// motor B reverse
-		motorBSpeed = value;
-		// motor A reverse
-		motorASpeed = value;
+		// reverse
+		motorBSpeed = joyData.Y;
+		motorASpeed = joyData.Y;
 
-		if (leftRight < 0)
+		if (joyData.X < 0)
 		{
-			motorBSpeed = value - leftRight;
+			// reverse right
+			motorBSpeed = joyData.Y - joyData.X;
 		}
-		else if (leftRight > 0)
+		else if (joyData.X > 0)
 		{
-			motorASpeed = value + leftRight;
+			// reverse left
+			motorASpeed = joyData.Y + joyData.X;
 		}
 	}
-	else if (leftRight != 0)
+	else if (joyData.X != 0)
 	{
+		// not moving forward or reverse, turning on point
 		// condition below is just for clarification
-		if (leftRight < 0)
+		if (joyData.X < 0)
 		{
+			// spin left
 			// motor B backward
-			motorBSpeed = leftRight;
+			motorBSpeed = joyData.X;
 			// motor A forward
-			motorASpeed = -leftRight;
+			motorASpeed = -joyData.X;
 		}
-		else if (leftRight > 0)
+		else if (joyData.X > 0)
 		{
+			// spin right
 			// motor B forward
-			motorBSpeed = leftRight;
+			motorBSpeed = joyData.X;
 			// motor A backward
-			motorASpeed = -leftRight;
+			motorASpeed = -joyData.X;
 		}
 	}
 	else
@@ -141,43 +109,41 @@ void goForward(int value, int leftRight)
 		// stop both motors
 	}
 
-	motorMove(0, motorBSpeed);
-	motorMove(1, motorASpeed);
+	motor.move(motorASpeed, motorBSpeed);
 
 	Serial.print("B: ");
 	Serial.print(motorBSpeed);
 	Serial.print(" A: ");
 	Serial.println(motorASpeed);
 }
-
+long prevMillis = 0;
 void loop()
 {
+	long m = millis();
     if (radio.available())
     {
-       
-        radio.read(&buffer, 32);
-		buffer[33] = '\0';
-        // Spew it
-        Serial.print(F("Got: "));
-        Serial.println(buffer);
+		//Serial.println(F("Got joy data"));
+		prevMillis = m;
 
-		char* p = strchr(buffer, ',');
-		if (p != NULL)
-		{
-			
-			char* rest = &buffer[*p + 1];
-			*p = '\0';
-			int forwardBack = atoi(buffer);
-			Serial.print("fb:");
-			Serial.println(forwardBack);
-			int leftRight = atoi(p + 1);
-			Serial.print("lr:");
-			Serial.println(leftRight);
-			goForward(forwardBack, leftRight);
-		}
+		JoyData joyData;
+		radio.read(&joyData, sizeof(joyData));
+
+		// motor values are 0-255
+		joyData.X = joyData.X / 2;
+		joyData.Y = joyData.Y / 2;
+
+		//Serial.println(F("----------------"));
+		//printlnJoyData(joyData, Serial);
+		
+		handleJoyData(joyData);
     }
     else
-    {
-        //Serial.println(F("NO DATA"));
+    {		
+		long diff = m - prevMillis;
+		if (diff > 3000)
+		{
+			prevMillis = m;
+			Serial.println(F("No joy data after 3 seconds"));
+		}
     }
 }

@@ -15,25 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="joy_receiver.ino" />
+    <None Include="joy_sender.ino" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="__vm\.joy_receiver.vsarduino.h">
+    <ClInclude Include="__vm\.joy_sender.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="joydata.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="motor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MotorPins.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="motor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
